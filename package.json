@@ -1,12 +1,41 @@
 {
   "name": "@notiflyio/sdk",
-  "version": "0.0.1",
-  "description": "Placeholder — the official Notifly SDK. Coming soon.",
+  "version": "0.1.0",
+  "description": "Official Node.js / TypeScript client SDK for the Notifly notification API. Same client as @notiflyio/api, published under the @notiflyio/sdk name.",
   "license": "MIT",
+  "author": "Devino Solutions Inc. <support@notifly.io>",
   "homepage": "https://notifly.io",
-  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DevinoSolutions/notifly-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DevinoSolutions/notifly-node/issues"
+  },
+  "keywords": [
+    "notifly",
+    "notifications",
+    "sdk",
+    "push",
+    "email",
+    "sms",
+    "in-app",
+    "inbox"
+  ],
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "dependencies": {
+    "@notiflyio/api": "^0.1.26"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  },
+  "scripts": {
+    "test": "node test/smoke.cjs && node test/smoke.mjs && tsc -p test/tsconfig.json"
   }
 }
