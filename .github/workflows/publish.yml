@@ -1,3 +1,25 @@
+# Publishes @notiflyio/sdk to npm with trusted publishing (OIDC) — no NPM_TOKEN secret.
+#
+# The trusted publisher registered for @notiflyio/sdk on npmjs.com must be EXACTLY:
+#   Publisher:         GitHub Actions
+#   Organization/user: DevinoSolutions
+#   Repository:        notifly-node
+#   Workflow filename: publish.yml
+#   Environment:       (none)
+# All fields are case-sensitive; renaming this file breaks publishing until the registration is
+# updated. A mismatch surfaces as ENEEDAUTH / "Unable to authenticate" at the publish step.
+#
+# HOW TO RELEASE
+#   Bump "version" in package.json on main, then publish a GitHub release whose tag is
+#   v<version> (e.g. `gh release create v0.1.0 --repo DevinoSolutions/notifly-node`). The job
+#   fails if the tag does not match package.json. A GitHub PRE-release publishes under the npm
+#   dist-tag `next` instead of `latest`. workflow_dispatch (re-runs) only publishes from main,
+#   whatever version main declares (npm rejects a version that already exists).
+#
+# runs-on is GitHub-hosted on purpose, NOT ubuntu-devino: npm trusted publishing does not support
+# self-hosted runners ("self-hosted runners are not currently supported", docs.npmjs.com/trusted-publishers,
+# read 2026-09-23), and this repo is public while the org's self-hosted runner group disallows
+# public repositories.
 name: Publish
 
 on:
@@ -5,23 +27,59 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
   publish:
+    # Releases publish their tag; manual runs are limited to main so an unreviewed branch can
+    # never be published through the trusted publisher.
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     permissions:
       contents: read
-      # Required for npm trusted publishing (OIDC). No NPM_TOKEN secret is used.
-      id-token: write
+      id-token: write # required for npm trusted publishing (OIDC) and provenance
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
-          node-version: 22
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          # Trusted publishing needs Node >= 22.14.0 and npm >= 11.5.1.
+          node-version: "22.22.1"
           registry-url: https://registry.npmjs.org
 
-      # Trusted publishing requires npm >= 11.5.1; setup-node ships an older npm.
-      - run: npm install -g npm@latest
+      - name: Install the pinned npm CLI (setup-node's bundled npm predates OIDC publishing)
+        run: npm install -g npm@11.16.0 && npm --version
 
-      - run: npm publish --access public
+      - name: Check the release tag matches package.json
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "${TAG}" != "v${version}" ]; then
+            echo "::error::release tag ${TAG} does not match package.json version v${version}"
+            exit 1
+          fi
+
+      - name: Install and run the smoke tests
+        run: |
+          npm ci
+          npm test
+
+      - name: Publish to npm (trusted publishing + provenance)
+        env:
+          PRERELEASE: ${{ github.event_name == 'release' && github.event.release.prerelease }}
+        run: |
+          dist_tag=latest
+          if [ "${PRERELEASE}" = "true" ]; then
+            dist_tag=next
+          fi
+          npm publish --provenance --access public --tag "${dist_tag}"

@@ -1,0 +1,42 @@
+name: CI
+
+# runs-on is GitHub-hosted (ubuntu-latest) on purpose: this repo is PUBLIC and the org's
+# self-hosted ubuntu-devino fleet sits in the Default runner group, which does not allow public
+# repositories (allows_public_repositories=false, checked 2026-09-23) — jobs would queue forever.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22.22.1", "24.21.0"]
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install (lockfile enforced)
+        run: npm ci
+      - name: CJS + ESM + type smoke tests against @notiflyio/api
+        run: npm test
+      - name: Packed tarball contains only the entry points
+        run: npm pack --dry-run --json | node -e "const f=JSON.parse(require('fs').readFileSync(0))[0].files.map(x=>x.path).sort();console.log(f);const want=['LICENSE','README.md','index.d.ts','index.js','package.json'];if(JSON.stringify(f)!==JSON.stringify(want)){console.error('unexpected tarball contents');process.exit(1)}"
+      - name: Install the packed tarball into a fresh consumer and import it by name
+        run: |
+          tarball="$(npm pack --silent)"
+          bash test/consumer-smoke.sh "$tarball"
