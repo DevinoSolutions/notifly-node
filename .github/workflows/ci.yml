@@ -24,8 +24,10 @@ jobs:
       matrix:
         node-version: ["22.22.1", "24.21.0"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
       - name: Install (lockfile enforced)
@@ -34,3 +36,7 @@ jobs:
         run: npm test
       - name: Packed tarball contains only the entry points
         run: npm pack --dry-run --json | node -e "const f=JSON.parse(require('fs').readFileSync(0))[0].files.map(x=>x.path).sort();console.log(f);const want=['LICENSE','README.md','index.d.ts','index.js','package.json'];if(JSON.stringify(f)!==JSON.stringify(want)){console.error('unexpected tarball contents');process.exit(1)}"
+      - name: Install the packed tarball into a fresh consumer and import it by name
+        run: |
+          tarball="$(npm pack --silent)"
+          bash test/consumer-smoke.sh "$tarball"

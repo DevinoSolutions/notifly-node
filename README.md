@@ -4,8 +4,13 @@ Official Node.js / TypeScript client SDK for the [Notifly](https://notifly.io) n
 (in-app inbox, push, email, SMS, chat).
 
 **`@notiflyio/sdk` and [`@notiflyio/api`](https://www.npmjs.com/package/@notiflyio/api) are the same
-client.** This package re-exports `@notiflyio/api` unchanged: same classes, functions and types,
-same behaviour. Install whichever name you prefer; code and docs written for one work with the other.
+client.** This package re-exports the `@notiflyio/api` top-level entry point unchanged: the same
+`Notifly` client class, helpers and types, with the same behaviour, so anything you import from
+`"@notiflyio/api"` you can import from `"@notiflyio/sdk"` instead.
+
+Subpath imports (`@notiflyio/api/models/components`, `/models/errors`, `/models/operations`,
+`/funcs/*`, `/core.js`) are **not** re-exported. If you need them (for example the typed error
+classes for `instanceof` checks), install `@notiflyio/api` directly and import those paths from it.
 
 ## Install
 
@@ -14,7 +19,6 @@ npm install @notiflyio/sdk
 ```
 
 Works with CommonJS (`require`) and ES modules (`import`), and ships TypeScript declarations.
-Node 22+ recommended.
 
 ## Quickstart
 

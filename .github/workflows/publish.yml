@@ -12,8 +12,9 @@
 # HOW TO RELEASE
 #   Bump "version" in package.json on main, then publish a GitHub release whose tag is
 #   v<version> (e.g. `gh release create v0.1.0 --repo DevinoSolutions/notifly-node`). The job
-#   fails if the tag does not match package.json. workflow_dispatch publishes whatever version
-#   the checked-out ref declares (npm rejects a version that already exists).
+#   fails if the tag does not match package.json. A GitHub PRE-release publishes under the npm
+#   dist-tag `next` instead of `latest`. workflow_dispatch (re-runs) only publishes from main,
+#   whatever version main declares (npm rejects a version that already exists).
 #
 # runs-on is GitHub-hosted on purpose, NOT ubuntu-devino: npm trusted publishing does not support
 # self-hosted runners ("self-hosted runners are not currently supported", docs.npmjs.com/trusted-publishers,
@@ -35,15 +36,20 @@ concurrency:
 
 jobs:
   publish:
+    # Releases publish their tag; manual runs are limited to main so an unreviewed branch can
+    # never be published through the trusted publisher.
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       id-token: write # required for npm trusted publishing (OIDC) and provenance
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           # Trusted publishing needs Node >= 22.14.0 and npm >= 11.5.1.
           node-version: "22.22.1"
@@ -69,4 +75,11 @@ jobs:
           npm test
 
       - name: Publish to npm (trusted publishing + provenance)
-        run: npm publish --provenance --access public
+        env:
+          PRERELEASE: ${{ github.event_name == 'release' && github.event.release.prerelease }}
+        run: |
+          dist_tag=latest
+          if [ "${PRERELEASE}" = "true" ]; then
+            dist_tag=next
+          fi
+          npm publish --provenance --access public --tag "${dist_tag}"
