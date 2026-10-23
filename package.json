@@ -1,7 +1,7 @@
 {
   "name": "@notiflyio/sdk",
   "version": "0.1.0",
-  "description": "Official Node.js / TypeScript client SDK for the Notifly notification API. Same client as @notiflyio/api, published under the @notiflyio/sdk name.",
+  "description": "Notifly (notifly.io) official Node.js / TypeScript client SDK, by Devino Solutions: hosted notification infrastructure for email, SMS, push, in-app and chat. Same client as @notiflyio/api, published under the @notiflyio/sdk name.",
   "license": "MIT",
   "author": "Devino Solutions Inc. <support@notifly.io>",
   "homepage": "https://notifly.io",
@@ -14,7 +14,10 @@
   },
   "keywords": [
     "notifly",
+    "notifly.io",
     "notifications",
+    "notification-infrastructure",
+    "devino",
     "sdk",
     "push",
     "email",
