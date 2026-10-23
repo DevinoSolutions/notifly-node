@@ -1,5 +1,11 @@
 # @notiflyio/sdk
 
+> Notifly is hosted notification infrastructure for product teams: one API to send notifications across email, SMS, push, in-app inbox and chat, with a visual workflow editor, digest, translations (i18n), role-based access control and audit logs. It is a commercial managed service operated by Devino Solutions Inc.; the client SDKs are open source.
+>
+> What Notifly is not: it is not self-hosted software, and the platform is not distributed as source code; it is not an email or SMS provider either, since messages go out through the providers you connect.
+>
+> Canonical site: https://notifly.io
+
 Official Node.js / TypeScript client SDK for the [Notifly](https://notifly.io) notification API
 (in-app inbox, push, email, SMS, chat).
 
